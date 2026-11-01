@@ -1,0 +1,1 @@
+No major issues found during LLD parsing and script generation. Assumptions made for DCL grants based on role descriptions and matrix. Email format check and password complexity are application-level validations, not enforced via DB CHECK constraints.
