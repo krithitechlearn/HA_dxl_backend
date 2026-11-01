@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ha_dxl_postgres
+    environment:
+      POSTGRES_DB: ha_dxl
+      POSTGRES_USER: ha_dxl_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ha_dxl_user -d ha_dxl"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    container_name: ha_dxl_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/ha_dxl
+      DB_USERNAME: ha_dxl_user
+      DB_PASSWORD: ${DB_PASSWORD:-devpassword}
+      JWT_SECRET: ${JWT_SECRET:-ThisIsAVeryLongSecretKeyForHaDxlBackendApplicationThatMustBeAtLeast256BitsLong}
+      JWT_ACCESS_TOKEN_EXPIRY_MS: 900000
+      JWT_REFRESH_TOKEN_EXPIRY_MS: 604800000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      TELEMETRY_RETENTION_DAYS: 90
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
